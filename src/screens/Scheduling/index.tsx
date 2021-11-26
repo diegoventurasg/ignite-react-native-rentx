@@ -1,18 +1,16 @@
 import React, { useState } from 'react';
-import { useNavigation, NavigationProp, useRoute } from '@react-navigation/native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { format, parseISO } from 'date-fns';
 import { StatusBar } from 'react-native';
 import { useTheme } from 'styled-components';
 
 import { DateData } from 'react-native-calendars/src/types';
 
-import { SchedulingParams, RootStackParamList } from '../../routes/RootStackParamList';
+import { RootStackParamList } from '../../@types/navigation';
 
 import { BackButton } from '../../components/BackButton';
 import { Button } from '../../components/Button';
 import { Calendar, generateInterval, MarkedDateProps } from '../../components/Calendar';
-
-import { getPlatformDate } from '../../utils/getPlatformDate';
 
 import ArrowSvg from '../../assets/arrow.svg';
 
@@ -34,17 +32,15 @@ interface RentalPeriod {
 }
 
 
-type SchedulingScreenProp = NavigationProp<RootStackParamList, 'Home'>;
+type SchedulingProps = NativeStackScreenProps<RootStackParamList, 'Scheduling'>;
 
-export function Scheduling() {
+export function Scheduling({ navigation, route }: SchedulingProps) {
     const [lastSelectedDate, setLastSelectedDate] = useState<DateData>({} as DateData);
     const [markedDates, setMarkedDates] = useState<MarkedDateProps>({} as MarkedDateProps);
     const [rentalPeriod, setRentalPeriod] = useState<RentalPeriod>({} as RentalPeriod);
 
     const theme = useTheme();
-    const navigation = useNavigation<SchedulingScreenProp>();
-    const route = useRoute();
-    const { car } = route.params as SchedulingParams;
+    const { car } = route.params;
 
     function handleConfirmRental() {
         navigation.navigate('SchedulingDetails', {

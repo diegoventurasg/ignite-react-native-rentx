@@ -95,3 +95,10 @@ export const Footer = styled.View`
 
   padding: 24px 24px ${getBottomSpace() + 24}px;
 `;
+
+export const OffilineInfo = styled.Text`
+  font-family: ${({ theme }) => theme.fonts.secondary_400};
+  color: ${({ theme }) => theme.colors.main};
+  font-size: 10px;
+  text-align: center;
+`;

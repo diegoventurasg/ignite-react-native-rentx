@@ -1,22 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
-import { useTheme } from 'styled-components';
-import { StatusBar, StyleSheet, BackHandler } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { StatusBar } from 'react-native';
 import { RFValue } from 'react-native-responsive-fontsize';
-import { RectButton, PanGestureHandler } from 'react-native-gesture-handler';
+import { useNetInfo } from '@react-native-community/netinfo';
+import { synchronize } from '@nozbe/watermelondb/sync';
 
-import Animated, {
-    useSharedValue,
-    useAnimatedStyle,
-    useAnimatedGestureHandler,
-    withSpring
-} from 'react-native-reanimated';
-
-const ButtonAnimated = Animated.createAnimatedComponent(RectButton);
-
-import { RootStackParamList } from '../../routes/RootStackParamList';
+import { RootStackParamList } from '../../@types/navigation';
+import { database } from '../../database';
 import { api } from '../../services/api';
+import { CarModel } from '../../database/model/CarModel';
 import { CarDTO } from '../../dtos/CarDTO';
 
 import Logo from '../../assets/logo.svg';
@@ -32,71 +24,79 @@ import {
     CarList,
 } from './styles';
 
-type HomeScreenProp = NavigationProp<RootStackParamList, 'Home'>;
+type HomeProps = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
-export function Home() {
-    const { navigate } = useNavigation<HomeScreenProp>();
-    const theme = useTheme();
-
+export function Home({ navigation }: HomeProps) {
     const [cars, setCars] = useState<CarDTO[]>([] as CarDTO[]);
     const [loading, setLoading] = useState(true);
 
-    const positionY = useSharedValue(0);
-    const positionX = useSharedValue(0);
-
-    const myCarsButtonStyle = useAnimatedStyle(() => {
-        return {
-            transform: [
-                { translateX: positionX.value },
-                { translateY: positionY.value }
-            ]
-        }
-    });
-
-    const onGestureEvent = useAnimatedGestureHandler({
-        onStart(_, ctx: any) {
-            ctx.positionX = positionX.value;
-            ctx.positionY = positionY.value;
-        },
-        onActive(event, ctx: any) {
-            positionX.value = ctx.positionX + event.translationX;
-            positionY.value = ctx.positionY + event.translationY;
-        },
-        onEnd() {
-            positionX.value = withSpring(0);
-            positionY.value = withSpring(0);
-        }
-    });
+    const netInfo = useNetInfo();
 
     function handleCarDetails(car: CarDTO) {
-        navigate('CarDetails', { car });
+        navigation.navigate('CarDetails', { car });
     }
 
-    function handleOpenMyCars() {
-        navigate('MyCars');
+    async function offlineSynchronize() {
+        await synchronize({
+            database,
+            pullChanges: async ({ lastPulledAt }) => {
+                const response = await api
+                    .get(`cars/sync/pull?lastPulledVersion=${lastPulledAt || 0}`);
+
+                const { changes, latestVersion } = response.data;
+                return { changes, timestamp: latestVersion }
+            },
+            pushChanges: async ({ changes }) => {
+                const user = changes.users;
+                await api.post('/users/sync', user).catch(console.log);
+            },
+        });
     }
 
     useEffect(() => {
+        let isMounted = true;
+
         async function fetchCars() {
             try {
-                const response = await api.get('/cars');
-                setCars(response.data);
+                const carCollection = database.get<CarModel>('cars');
+                const cars = await carCollection.query().fetch();
+                const carsList: CarDTO[] =
+                    cars.map(car => {
+                        return {
+                            id: car.id,
+                            brand: car.brand,
+                            name: car.name,
+                            about: car.about,
+                            period: car.period,
+                            price: car.price,
+                            fuel_type: car.fuel_type,
+                            thumbnail: car.thumbnail,
+                        }
+                    }
+                    );
+                if (isMounted) {
+                    setCars(carsList);
+                }
             } catch (error) {
                 console.log(error);
             } finally {
-                setLoading(false);
+                if (isMounted)
+                    setLoading(false);
             }
 
         }
 
         fetchCars();
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     useEffect(() => {
-        BackHandler.addEventListener('hardwareBackPress', () => {
-            return true;
-        });
-    }, []);
+        if (netInfo.isConnected === true) {
+            offlineSynchronize();
+        }
+    }, [netInfo.isConnected]);
 
     return (
         <Container>
@@ -129,40 +129,6 @@ export function Home() {
                 />
             }
 
-            <PanGestureHandler onGestureEvent={onGestureEvent}>
-                <Animated.View
-                    style={[
-                        myCarsButtonStyle,
-                        {
-                            position: 'absolute',
-                            bottom: 13,
-                            right: 22
-                        }
-                    ]}
-                >
-                    <ButtonAnimated
-                        onPress={handleOpenMyCars}
-                        style={[styles.button, { backgroundColor: theme.colors.main }]}
-                    >
-                        <Ionicons
-                            name="ios-car-sport"
-                            size={32}
-                            color={theme.colors.shape}
-                        />
-                    </ButtonAnimated>
-                </Animated.View>
-            </PanGestureHandler>
-
         </Container>
     );
 }
-
-const styles = StyleSheet.create({
-    button: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        justifyContent: 'center',
-        alignItems: 'center'
-    }
-})

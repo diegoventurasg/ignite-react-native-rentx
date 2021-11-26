@@ -1,8 +1,8 @@
 import React from 'react';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { StatusBar, useWindowDimensions } from 'react-native';
 
-import { RootStackParamList } from '../../routes/RootStackParamList';
+import { RootStackParamList } from '../../@types/navigation';
 
 import { ConfirmButton } from '../../components/ConfirmButton';
 
@@ -17,15 +17,15 @@ import {
     Footer,
 } from './styles';
 
-type SchedulingCompleteScreenProp = NavigationProp<RootStackParamList, 'SchedulingComplete'>;
+type ConfirmationProps = NativeStackScreenProps<RootStackParamList, 'Confirmation'>;
 
-export function SchedulingComplete() {
+export function Confirmation({ navigation, route }: ConfirmationProps) {
     const { width } = useWindowDimensions();
 
-    const { navigate } = useNavigation<SchedulingCompleteScreenProp>();
+    const { title, message, nextScreenRoute } = route.params;
 
     function handleConfirm() {
-        navigate('Home');
+        navigation.navigate(nextScreenRoute);
     }
 
     return (
@@ -40,12 +40,10 @@ export function SchedulingComplete() {
 
             <Content>
                 <DoneSvg width={80} height={80} />
-                <Title>Carro alugado!</Title>
+                <Title>{title}</Title>
 
                 <Message>
-                    Agora você só precisa ir {'\n'}
-                    até a concessionária da RENTX {'\n'}
-                    pegar o seu automóvel.
+                    {message}
                 </Message>
 
                 <Footer>

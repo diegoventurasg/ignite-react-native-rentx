@@ -1,6 +1,6 @@
 import React from 'react';
 import { Feather } from '@expo/vector-icons';
-import { ThemeContext, useTheme } from 'styled-components';
+import { useTheme } from 'styled-components';
 
 import { generateInterval } from './generateInterval';
 import { ptBR } from './localeConfig';

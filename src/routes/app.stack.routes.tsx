@@ -2,34 +2,27 @@ import React from 'react';
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import { Splash } from '../screens/Splash';
+import { RootStackParamList } from '../@types/navigation';
+
 import { Home } from '../screens/Home';
 import { CarDetails } from '../screens/CarDetails';
 import { Scheduling } from '../screens/Scheduling';
 import { SchedulingDetails } from '../screens/SchedulingDetails';
-import { SchedulingComplete } from '../screens/SchedulingComplete';
-import { MyCars } from '../screens/MyCars';
+import { Confirmation } from '../screens/Confirmation';
 
-const { Navigator, Screen } = createNativeStackNavigator();
+export function AppStackRoutes() {
+    const { Navigator, Screen } = createNativeStackNavigator<RootStackParamList>();
 
-export function StackRoutes() {
     return (
         <Navigator
             screenOptions={{
                 headerShown: false,
             }}
-            initialRouteName="Splash"
+            initialRouteName="Home"
         >
-            <Screen
-                name="Splash"
-                component={Splash}
-            />
             <Screen
                 name="Home"
                 component={Home}
-                options={{
-                    gestureEnabled: false,
-                }}
             />
             <Screen
                 name="CarDetails"
@@ -44,12 +37,8 @@ export function StackRoutes() {
                 component={SchedulingDetails}
             />
             <Screen
-                name="SchedulingComplete"
-                component={SchedulingComplete}
-            />
-            <Screen
-                name="MyCars"
-                component={MyCars}
+                name="Confirmation"
+                component={Confirmation}
             />
         </Navigator>
     )
